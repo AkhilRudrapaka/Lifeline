@@ -79,6 +79,7 @@ export class HospitalService {
       capabilities: hospital.capabilities,
       languages: hospital.languages,
       verification_status: hospital.verification_status,
+      phone_number: hospital.phone_number,
       is_operational: hospital.er_beds_available > 0 || hospital.icu_beds_available > 0,
     };
   }

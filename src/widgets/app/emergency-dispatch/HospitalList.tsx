@@ -9,6 +9,7 @@ interface HospitalListProps {
   isLoadingRoute: boolean;
   onSelect: (hospitalId: string) => void;
   onReserve: (hospitalId: string) => void;
+  onViewDetails: (hospitalId: string) => void;
 }
 
 const textColor = (isDark: boolean) => (isDark ? '#f1f5f9' : '#0f172a');
@@ -46,10 +47,11 @@ export default function HospitalList({
   isLoadingRoute,
   onSelect,
   onReserve,
+  onViewDetails,
 }: HospitalListProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto', padding: 2 }}>
-      {hospitals.map((hospital) => {
+      {hospitals.map((hospital, index) => {
         const selected = hospital.hospital_id === selectedHospitalId;
         const noBeds = hospital.er_beds_available === 0 && hospital.icu_beds_available === 0;
 
@@ -67,7 +69,25 @@ export default function HospitalList({
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-              <div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div
+                  style={{
+                    flexShrink: 0,
+                    width: 22,
+                    height: 22,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: isDark ? '#f1f5f9' : '#0f172a',
+                    background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.06)',
+                  }}
+                >
+                  #{index + 1}
+                </div>
+                <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: textColor(isDark) }}>
                   {hospital.hospital_name}
                   {hospital.is_recommended && (
@@ -88,6 +108,7 @@ export default function HospitalList({
                   )}
                 </div>
                 <div style={{ fontSize: 12, color: mutedColor(isDark), marginTop: 2 }}>{hospital.city}</div>
+                </div>
               </div>
               <div
                 style={{
@@ -148,6 +169,26 @@ export default function HospitalList({
                 }}
               >
                 {selected ? 'Route shown' : 'Show route'}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewDetails(hospital.hospital_id);
+                }}
+                style={{
+                  flex: 0.7,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: '7px 8px',
+                  borderRadius: 8,
+                  border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
+                  background: 'transparent',
+                  color: textColor(isDark),
+                  cursor: 'pointer',
+                }}
+              >
+                Details
               </button>
               <button
                 type="button"

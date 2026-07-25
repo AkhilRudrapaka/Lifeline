@@ -20,7 +20,15 @@ interface OrsFeatureCollection {
  * A missing API key or a failed request never blocks emergency dispatch: both
  * degrade to a haversine-distance estimate flagged as such in the response.
  */
-@Injectable()
+/**
+ * `deps` is required (not just the constructor's TS type) because `tsx`
+ * (esbuild) — used by `nitrostack-cli dev` — does not emit TypeScript's
+ * `emitDecoratorMetadata` output. Without it the DI container has no
+ * `design:paramtypes` to resolve from and silently injects `undefined` in
+ * dev mode, even though the equivalent `tsc`-compiled production build
+ * resolves it correctly via reflection alone.
+ */
+@Injectable({ deps: [ConfigService] })
 export class RoutingService {
   constructor(private readonly config: ConfigService) {}
 

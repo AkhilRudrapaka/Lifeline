@@ -14,6 +14,7 @@ export interface Hospital {
   estimated_er_wait_minutes: number;
   languages: string[];
   verification_status: string;
+  phone_number: string;
   data_type: 'SYNTHETIC_DEMO';
 }
 
@@ -58,6 +59,7 @@ export interface HospitalCapabilitiesResult {
   capabilities: string[];
   languages: string[];
   verification_status: string;
+  phone_number: string;
   is_operational: boolean;
 }
 

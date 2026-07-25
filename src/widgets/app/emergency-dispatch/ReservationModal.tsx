@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { RankedHospitalData, ReservationRequestPayload, ReservationResultData, BedTypeData } from './types';
+import { copyToClipboard } from './utils';
 
 interface ReservationModalProps {
   hospital: RankedHospitalData;
@@ -9,8 +10,12 @@ interface ReservationModalProps {
   isSubmitting: boolean;
   error: string | null;
   result: ReservationResultData | null;
+  etaMinutes: number | null;
   onClose: () => void;
   onSubmit: (payload: ReservationRequestPayload) => void;
+  onShareReservation: () => void;
+  onOpenNavigation: () => void;
+  onCallHospital: () => void;
 }
 
 export default function ReservationModal({
@@ -19,13 +24,25 @@ export default function ReservationModal({
   isSubmitting,
   error,
   result,
+  etaMinutes,
   onClose,
   onSubmit,
+  onShareReservation,
+  onOpenNavigation,
+  onCallHospital,
 }: ReservationModalProps) {
   const [patientName, setPatientName] = useState('');
   const [patientAge, setPatientAge] = useState('');
   const [bedType, setBedType] = useState<BedTypeData>(hospital.er_beds_available > 0 ? 'ER' : 'ICU');
   const [notes, setNotes] = useState('');
+  const [idCopied, setIdCopied] = useState(false);
+
+  async function handleCopyId() {
+    if (!result) return;
+    const ok = await copyToClipboard(result.reservation_id);
+    setIdCopied(ok);
+    if (ok) setTimeout(() => setIdCopied(false), 2000);
+  }
 
   const panelBg = isDark ? '#0f172a' : '#ffffff';
   const textColor = isDark ? '#f1f5f9' : '#0f172a';
@@ -100,16 +117,38 @@ export default function ReservationModal({
             </div>
             <div style={{ fontSize: 13, color: textColor, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span>Patient: {result.patient_name}</span>
+              <span>Department: {result.department}</span>
               <span>Bed type: {result.bed_type}</span>
+              {etaMinutes !== null && <span>ETA: ~{etaMinutes} min</span>}
+              <span>Reference number: {result.confirmation_code}</span>
+              <span>Hospital contact: {result.hospital_phone_number}</span>
               <span>
                 Remaining beds: {result.remaining_er_beds} ER &middot; {result.remaining_icu_beds} ICU
               </span>
             </div>
+
+            <div style={{ marginTop: 12, fontSize: 12, color: mutedColor, lineHeight: 1.5 }}>📋 {result.arrival_instructions}</div>
+
+            <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
+              <button type="button" onClick={handleCopyId} style={miniButtonStyle(borderColor, textColor)}>
+                {idCopied ? '✓ Copied' : '📋 Copy ID'}
+              </button>
+              <button type="button" onClick={onShareReservation} style={miniButtonStyle(borderColor, textColor)}>
+                🔗 Share
+              </button>
+              <button type="button" onClick={onOpenNavigation} style={miniButtonStyle(borderColor, textColor)}>
+                🧭 Navigate
+              </button>
+              <button type="button" onClick={onCallHospital} style={miniButtonStyle(borderColor, textColor)}>
+                📞 Call
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={onClose}
               style={{
-                marginTop: 18,
+                marginTop: 12,
                 width: '100%',
                 padding: '10px 0',
                 borderRadius: 10,
@@ -224,7 +263,9 @@ export default function ReservationModal({
             />
 
             {error && (
-              <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</div>
+              <div style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>
+                ⚠️ {error} Your details are still filled in below — just try again.
+              </div>
             )}
 
             <div style={{ display: 'flex', gap: 10 }}>
@@ -258,7 +299,7 @@ export default function ReservationModal({
                   cursor: isSubmitting ? 'default' : 'pointer',
                 }}
               >
-                {isSubmitting ? 'Reserving…' : 'Confirm reservation'}
+                {isSubmitting ? 'Reserving…' : error ? 'Retry reservation' : 'Confirm reservation'}
               </button>
             </div>
           </form>
@@ -266,4 +307,18 @@ export default function ReservationModal({
       </div>
     </div>
   );
+}
+
+function miniButtonStyle(borderColor: string, textColor: string) {
+  return {
+    flex: 1,
+    fontSize: 11.5,
+    fontWeight: 700,
+    padding: '8px 4px',
+    borderRadius: 8,
+    border: `1px solid ${borderColor}`,
+    background: 'transparent',
+    color: textColor,
+    cursor: 'pointer',
+  } as const;
 }

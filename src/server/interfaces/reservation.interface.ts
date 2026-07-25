@@ -17,8 +17,11 @@ export interface EmergencyReservationResult {
   status: ReservationStatus;
   hospital_id: string;
   hospital_name: string;
+  hospital_phone_number: string;
   patient_name: string;
   bed_type: BedType;
+  department: string;
+  arrival_instructions: string;
   reserved_at: string;
   remaining_er_beds: number;
   remaining_icu_beds: number;

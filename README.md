@@ -17,6 +17,7 @@ Track: **HealthTech & Life Sciences**
 - [Running Locally](#running-locally)
 - [NitroStack Studio](#nitrostack-studio)
 - [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
 
 ## Architecture
 
@@ -31,6 +32,8 @@ Widget (React)  ──callTool──▶  Tool (Controller)  ──▶  Service  
 - **Widgets** (`src/widgets/app/`) are Next.js routes rendered inside the MCP client. They never read the hospital data or call services directly — only `callTool(...)`.
 - **Shared** (`src/server/shared/`) holds cross-cutting error classes (`AppError` → `McpError`) and constants (tool names, capability vocabulary, ranking weights).
 - **Interfaces** (`src/server/interfaces/`) are the single source of truth for every domain shape (`Hospital`, `Patient`, `Reservation`, `Route`, `RankedHospital`, `EmergencyAssessment`, …). `src/server/types/` re-exports them for convenience.
+
+> **Dependency injection pattern — read before adding a new service or controller.** `nitrostack-cli dev` runs source through `tsx` (esbuild), which does not emit TypeScript's `emitDecoratorMetadata`. Without it, the DI container has no `design:paramtypes` to resolve constructor parameters from, and a plain `constructor(private readonly x: XService) {}` silently receives `undefined` in dev mode (it works fine once compiled by real `tsc` for production, which is what makes this easy to miss). Every service/controller in this codebase therefore declares its dependencies explicitly with `@Injectable({ deps: [...] })` — including controllers, which must stack `@Injectable({ deps: [...] })` alongside `@Controller()` since `@Controller` has no `deps` option of its own. See `HospitalTools` in `src/server/tools/hospital.tools.ts` for the reference pattern. This was verified with a real `@modelcontextprotocol/sdk` `Client` driving the server over stdio, not just `tsc`/unit-level checks — that is the only way this class of bug reliably surfaces.
 
 ## Folder Structure
 
@@ -163,6 +166,23 @@ In production (`NODE_ENV=production`), the server defaults to dual transport (ST
 - `ORS_API_KEY` — set this in your production environment for live routing
 
 The `src/widgets` Next.js app builds as a static export (`output: 'export'` in `next.config.js`) and is served by the MCP server alongside the tool definitions — no separate hosting is required.
+
+## Troubleshooting
+
+**`Failed to instantiate provider "class OAuthModule ...": Cannot resolve token "OAUTH_CONFIG"` at startup.**
+This is a known, benign log line from `@nitrostack/core`, not a Lifeline bug. Lifeline does not use OAuth anywhere — grep `src/` and there is no `OAuthModule` import, no `OAUTH_*` env var, no auth guard. The `@Injectable()` decorator on the framework's *own* `OAuthModule` class self-registers it into the shared DI container the moment `@nitrostack/core` is imported (unavoidable — every NitroStack app imports it), and `nitrostack-cli start`'s production bootstrap eagerly instantiates every registered provider, including this unconfigured built-in one. It is caught internally and logged at `error` level, but it does **not** stop startup: the log immediately continues with `lifeline-server started successfully`, all 7 tools registered, and both transports up. Reproduced with `nitrostack-cli start` regardless of `MCP_TRANSPORT_TYPE` (stdio, http, or dual); it never appears under `nitrostack-cli dev`. The only way to silence it would be to call `OAuthModule.forRoot()` with placeholder credentials — which would *add* real (unwanted) OAuth discovery endpoints just to hide a log line, a worse outcome than the log line itself. Safe to ignore.
+
+**Build fails.** Run `npm run install:all` (or `npm install && npm --prefix src/widgets install`) first — a missing `node_modules` in either project is the most common cause. Then re-run `npm run build` and read the first error block (TypeScript errors print in full; widget bundling errors print under "Bundling widgets...").
+
+**Widget doesn't load / blank map in NitroStack Studio.** Confirm `npm run dev` printed `Widget dev server running on :3001`; Studio proxies widget iframes through that port in development. In production, confirm `src/widgets/out/emergency-dispatch.html` exists after `npm run build`.
+
+**Map tiles don't load.** The map uses public OpenStreetMap tiles (`{s}.tile.openstreetmap.org`) — this requires outbound internet access from wherever the widget iframe renders. No API key is needed for tiles.
+
+**`calculate_route` always returns an estimate, never a real route.** `ORS_API_KEY` is unset. This is expected fallback behavior, not an error — add a free OpenRouteService key to `.env` for live routing.
+
+**Port conflicts on `:3000` or `:3001`.** `:3000` is the production HTTP transport port (`PORT` env var to change it); `:3001` is the widgets dev server (hardcoded in `src/widgets/package.json`'s `dev` script). Stop whatever else is bound to that port, or edit the script.
+
+**`npm audit` reports vulnerabilities.** `@nitrostack/cli`'s bundled `archiver`/`esbuild`/`glob` chain and `next@14.2.35`'s known CVEs (Server Actions, middleware, image optimization, Server Components caching) are transitive framework dependencies. None of the vulnerable code paths are reachable in this project: `nitrostack-cli build` bundles widgets with its own esbuild call (not `next build`/`next start`), production widget delivery is a static HTML file with no Next.js server ever running, and `src/widgets/app/` has no middleware, API routes, or server actions. Fixing them requires a major-version jump (`next@16`, `@nitrostack/cli@1.0.0` — a downgrade) with no patched version inside the currently-pinned ranges; not applied here to avoid destabilizing a working build immediately before deployment.
 
 ## Author
 

@@ -11,6 +11,7 @@
     "estimated_er_wait_minutes": 12,
     "languages": ["English", "Tamil", "Malayalam"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-422-4001001",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -25,6 +26,7 @@
     "estimated_er_wait_minutes": 25,
     "languages": ["English", "Tamil"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-422-4001002",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -39,6 +41,7 @@
     "estimated_er_wait_minutes": 18,
     "languages": ["English", "Tamil"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-422-4001003",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -53,6 +56,7 @@
     "estimated_er_wait_minutes": 10,
     "languages": ["English", "Tamil", "Hindi"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-422-4001004",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -67,6 +71,7 @@
     "estimated_er_wait_minutes": 30,
     "languages": ["English", "Tamil"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-422-4001005",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -81,6 +86,7 @@
     "estimated_er_wait_minutes": 15,
     "languages": ["English", "Tamil"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-422-4001006",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -95,6 +101,7 @@
     "estimated_er_wait_minutes": 40,
     "languages": ["Tamil"],
     "verification_status": "PENDING_VERIFICATION",
+    "phone_number": "+91-422-4001007",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -109,6 +116,7 @@
     "estimated_er_wait_minutes": 8,
     "languages": ["English", "Tamil"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-422-4001008",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -123,6 +131,7 @@
     "estimated_er_wait_minutes": 20,
     "languages": ["Tamil"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-422-4001009",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -137,6 +146,7 @@
     "estimated_er_wait_minutes": 35,
     "languages": ["Tamil", "English"],
     "verification_status": "PENDING_VERIFICATION",
+    "phone_number": "+91-4259-401010",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -151,6 +161,7 @@
     "estimated_er_wait_minutes": 22,
     "languages": ["Tamil"],
     "verification_status": "VERIFIED",
+    "phone_number": "+91-421-4001011",
     "data_type": "SYNTHETIC_DEMO"
   },
   {
@@ -165,6 +176,7 @@
     "estimated_er_wait_minutes": 5,
     "languages": ["Tamil"],
     "verification_status": "PENDING_VERIFICATION",
+    "phone_number": "+91-4254-401012",
     "data_type": "SYNTHETIC_DEMO"
   }
 ]

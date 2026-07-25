@@ -16,6 +16,7 @@ export interface RankedHospitalData {
   estimated_er_wait_minutes: number;
   languages: string[];
   verification_status: string;
+  phone_number: string;
   data_type: 'SYNTHETIC_DEMO';
   distance_km: number;
   eta_minutes: number;
@@ -38,10 +39,22 @@ export interface RankHospitalsOutputData {
   ranking_weights: RankingWeightsData;
 }
 
+export type SeverityLevelData = 'Critical' | 'Severe' | 'Moderate' | 'Mild';
+
+export interface PatientContextData {
+  symptoms?: string;
+  age?: number;
+  gender?: string;
+}
+
 export interface RankHospitalsToolInputData {
   required_capability: string;
   origin_latitude: number;
   origin_longitude: number;
+  severity?: SeverityLevelData;
+  confidence?: number;
+  triage_reasoning?: string;
+  patient?: PatientContextData;
 }
 
 export interface GeoJSONRouteData {
@@ -71,8 +84,11 @@ export interface ReservationResultData {
   status: string;
   hospital_id: string;
   hospital_name: string;
+  hospital_phone_number: string;
   patient_name: string;
   bed_type: BedTypeData;
+  department: string;
+  arrival_instructions: string;
   reserved_at: string;
   remaining_er_beds: number;
   remaining_icu_beds: number;
@@ -83,4 +99,19 @@ export interface ReservationRequestPayload {
   patient_age?: number;
   bed_type: BedTypeData;
   notes?: string;
+}
+
+/**
+ * A single tool call made by THIS widget (not the upstream AI reasoning that
+ * ran before the widget mounted — MCP exposes no invocation history for
+ * that). Backs the Developer Panel.
+ */
+export interface ToolCallLogEntry {
+  id: string;
+  toolName: string;
+  startedAt: number;
+  durationMs: number | null;
+  status: 'pending' | 'success' | 'error';
+  requestPayload: Record<string, unknown>;
+  responseSummary: string | null;
 }

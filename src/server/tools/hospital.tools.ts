@@ -1,4 +1,4 @@
-import { ToolDecorator as Tool, ControllerDecorator as Controller, ExecutionContext, z } from '@nitrostack/core';
+import { ToolDecorator as Tool, ControllerDecorator as Controller, Injectable, ExecutionContext, z } from '@nitrostack/core';
 import { HospitalService } from '../services/hospital.service.js';
 import { DEFAULT_SEARCH_RADIUS_KM } from '../shared/constants.js';
 
@@ -18,7 +18,15 @@ const hospitalIdSchema = z.object({
 });
 type HospitalIdInput = z.infer<typeof hospitalIdSchema>;
 
+// Stacking @Injectable({ deps }) on a @Controller is required for constructor
+// injection to work under `nitrostack-cli dev` (tsx/esbuild): tsx does not
+// emit emitDecoratorMetadata, so the DI container has no design:paramtypes,
+// and @Controller itself has no `deps` option. @Injectable's explicit `deps`
+// is the only mechanism the container's dependency resolver honors when
+// design:paramtypes is absent (verified — @Inject() alone does not work here,
+// since the container merges it by iterating design:paramtypes, which is empty).
 @Controller()
+@Injectable({ deps: [HospitalService] })
 export class HospitalTools {
   constructor(private readonly hospitalService: HospitalService) {}
 

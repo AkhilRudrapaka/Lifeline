@@ -1,4 +1,4 @@
-import { ToolDecorator as Tool, ControllerDecorator as Controller, ExecutionContext, z } from '@nitrostack/core';
+import { ToolDecorator as Tool, ControllerDecorator as Controller, Injectable, ExecutionContext, z } from '@nitrostack/core';
 import { TriageService } from '../services/triage.service.js';
 
 const triageSymptomsSchema = z.object({
@@ -8,7 +8,9 @@ const triageSymptomsSchema = z.object({
 });
 type TriageSymptomsInput = z.infer<typeof triageSymptomsSchema>;
 
+// See HospitalTools for why @Injectable({ deps }) must be stacked on @Controller.
 @Controller()
+@Injectable({ deps: [TriageService] })
 export class TriageTools {
   constructor(private readonly triageService: TriageService) {}
 

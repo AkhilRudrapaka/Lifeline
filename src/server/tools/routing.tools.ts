@@ -1,4 +1,4 @@
-import { ToolDecorator as Tool, ControllerDecorator as Controller, ExecutionContext, z } from '@nitrostack/core';
+import { ToolDecorator as Tool, ControllerDecorator as Controller, Injectable, ExecutionContext, z } from '@nitrostack/core';
 import { RoutingService } from '../services/routing.service.js';
 
 const calculateRouteSchema = z.object({
@@ -9,7 +9,9 @@ const calculateRouteSchema = z.object({
 });
 type CalculateRouteInput = z.infer<typeof calculateRouteSchema>;
 
+// See HospitalTools for why @Injectable({ deps }) must be stacked on @Controller.
 @Controller()
+@Injectable({ deps: [RoutingService] })
 export class RoutingTools {
   constructor(private readonly routingService: RoutingService) {}
 
