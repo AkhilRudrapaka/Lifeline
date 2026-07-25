@@ -1,0 +1,4 @@
+.nitrostudio/
+node_modules/
+dist/
+.env
