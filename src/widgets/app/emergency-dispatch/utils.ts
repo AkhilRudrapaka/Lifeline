@@ -27,6 +27,20 @@ function hasWindow(): boolean {
   return typeof window !== 'undefined' && typeof navigator !== 'undefined';
 }
 
+/**
+ * `getToolInput()` returns the raw arguments the calling AI sent — it never
+ * passes through our server's Zod schema (that only validates what the
+ * server itself receives), so a client that serializes numbers as JSON
+ * strings can hand the widget `"11.0016"` instead of `11.0016`. Coordinate
+ * math (`.toFixed`, Leaflet's projections) requires an actual `number` and
+ * throws on a string, so every numeric field read from tool input must be
+ * coerced through this rather than trusted at face value.
+ */
+export function toFiniteNumber(value: unknown): number | null {
+  const num = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(num) ? num : null;
+}
+
 /** Feature-detected — never throws even outside a browser context (e.g. during static export). */
 export function isIOS(): boolean {
   if (!hasWindow()) return false;

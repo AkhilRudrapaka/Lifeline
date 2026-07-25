@@ -16,7 +16,7 @@ import DeveloperPanel from './DeveloperPanel';
 import CallHospitalDialog from './CallHospitalDialog';
 import HospitalDetailsModal from './HospitalDetailsModal';
 import Toast, { ToastData } from './Toast';
-import { parseToolResult, buildNavigationUrl, shareOrCopy, safeOpenExternal, deriveDepartmentLabel } from './utils';
+import { parseToolResult, buildNavigationUrl, shareOrCopy, safeOpenExternal, deriveDepartmentLabel, toFiniteNumber } from './utils';
 import {
   RankHospitalsOutputData,
   RankHospitalsToolInputData,
@@ -103,7 +103,9 @@ export default function EmergencyDispatchWidget() {
     state?.selectedHospitalId ?? output?.recommended_hospital_id ?? hospitals[0]?.hospital_id ?? null;
   const selectedHospital = hospitals.find((h) => h.hospital_id === selectedHospitalId) ?? null;
   const selectedHospitalRank = selectedHospital ? hospitals.findIndex((h) => h.hospital_id === selectedHospitalId) + 1 : 0;
-  const origin = toolInput ? { latitude: toolInput.origin_latitude, longitude: toolInput.origin_longitude } : null;
+  const originLatitude = toolInput ? toFiniteNumber(toolInput.origin_latitude) : null;
+  const originLongitude = toolInput ? toFiniteNumber(toolInput.origin_longitude) : null;
+  const origin = originLatitude !== null && originLongitude !== null ? { latitude: originLatitude, longitude: originLongitude } : null;
   const reservingHospital = hospitals.find((h) => h.hospital_id === reservingHospitalId) ?? null;
   const callDialogHospital = hospitals.find((h) => h.hospital_id === callDialogHospitalId) ?? null;
   const detailsHospital = hospitals.find((h) => h.hospital_id === detailsHospitalId) ?? null;
