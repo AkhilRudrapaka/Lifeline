@@ -1,5 +1,9 @@
 # Lifeline
 
+> During medical emergencies, choosing the nearest hospital is not always the safest option.
+
+![Model Context Protocol](https://img.shields.io/badge/Model%20Context%20Protocol-MCP-blue) ![Built with NitroStack](https://img.shields.io/badge/Built%20with-NitroStack-0A66FF) ![Status](https://img.shields.io/badge/status-live-brightgreen)
+
 **Lifeline** is a NitroStack MCP server for intelligent emergency hospital routing. Instead of sending a patient to the *nearest* hospital, Lifeline triages the emergency, ranks nearby hospitals by medical specialization match, ICU/ER bed availability, travel ETA, and estimated wait time, calculates a live ambulance route, and lets a client reserve a bed before the patient arrives.
 
 Track: **HealthTech & Life Sciences**
@@ -8,6 +12,7 @@ Track: **HealthTech & Life Sciences**
 
 ## Table of Contents
 
+- [Live Demo](#live-demo)
 - [Architecture](#architecture)
 - [Folder Structure](#folder-structure)
 - [MCP Tools](#mcp-tools)
@@ -15,9 +20,17 @@ Track: **HealthTech & Life Sciences**
 - [Environment Variables](#environment-variables)
 - [Installation](#installation)
 - [Running Locally](#running-locally)
+- [Connect to an MCP Client](#connect-to-an-mcp-client)
 - [NitroStack Studio](#nitrostack-studio)
 - [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+## Live Demo
+
+🔗 **Live MCP endpoint:** https://lifeline-6a64e721-team-kanya-rashi-amrita-university-coimbatore.app.nitrocloud.ai
+
+Point any MCP-compatible client (Claude Desktop, Cursor, etc.) at the endpoint above to try Lifeline immediately — see [Connect to an MCP Client](#connect-to-an-mcp-client) for the exact config.
 
 ## Architecture
 
@@ -142,6 +155,36 @@ To run the widget's Next.js dev server standalone (useful for fast UI iteration 
 npm --prefix src/widgets run dev
 ```
 
+## Connect to an MCP Client
+
+**Hosted (no local setup):** point any MCP-compatible client at the [live endpoint](#live-demo):
+
+```json
+{
+  "mcpServers": {
+    "lifeline": {
+      "url": "https://lifeline-6a64e721-team-kanya-rashi-amrita-university-coimbatore.app.nitrocloud.ai"
+    }
+  }
+}
+```
+
+**Local (STDIO):** run `npm run dev` (or `npm start` for the compiled build) in this repo, then point your client at the process directly, e.g. for Claude Desktop's `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "lifeline": {
+      "command": "npx",
+      "args": ["tsx", "src/index.ts"],
+      "cwd": "/absolute/path/to/Lifeline"
+    }
+  }
+}
+```
+
+Restart the client after editing its config — Lifeline's 7 tools (see [MCP Tools](#mcp-tools)) and the `emergency-dispatch` widget become available immediately.
+
 ## NitroStack Studio
 
 [NitroStack Studio](https://nitrostack.ai/studio) is the recommended way to test and debug Lifeline during development — it lets you invoke tools directly (e.g. `rank_hospitals`) and preview the resulting `emergency-dispatch` widget (map, ranked list, route overlay, reservation flow) without needing a full chat client.
@@ -183,6 +226,10 @@ This is a known, benign log line from `@nitrostack/core`, not a Lifeline bug. Li
 **Port conflicts on `:3000` or `:3001`.** `:3000` is the production HTTP transport port (`PORT` env var to change it); `:3001` is the widgets dev server (hardcoded in `src/widgets/package.json`'s `dev` script). Stop whatever else is bound to that port, or edit the script.
 
 **`npm audit` reports vulnerabilities.** `@nitrostack/cli`'s bundled `archiver`/`esbuild`/`glob` chain and `next@14.2.35`'s known CVEs (Server Actions, middleware, image optimization, Server Components caching) are transitive framework dependencies. None of the vulnerable code paths are reachable in this project: `nitrostack-cli build` bundles widgets with its own esbuild call (not `next build`/`next start`), production widget delivery is a static HTML file with no Next.js server ever running, and `src/widgets/app/` has no middleware, API routes, or server actions. Fixing them requires a major-version jump (`next@16`, `@nitrostack/cli@1.0.0` — a downgrade) with no patched version inside the currently-pinned ranges; not applied here to avoid destabilizing a working build immediately before deployment.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ## Author
 
