@@ -1,5 +1,3 @@
-import { crypto } from 'node:crypto';
-
 /**
  * Utility for generating unique IDs and confirmation codes
  */

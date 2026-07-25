@@ -1,4 +1,4 @@
-import { GeoJSONRoute } from '../types/hospital.types.js';
+import { GeoJSONRoute } from '../interfaces/routing.interface.js';
 
 /**
  * GeoJSON and geographic data manipulation utilities

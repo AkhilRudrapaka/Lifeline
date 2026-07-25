@@ -1,14 +1,10 @@
+import { McpError } from '@nitrostack/core';
 import { ERROR_CODES } from './constants.js';
 
-export class AppError extends Error {
-  public readonly code: string;
-  public readonly statusCode: number;
-
-  constructor(message: string, code: string = 'INTERNAL_ERROR', statusCode: number = 500) {
-    super(message);
+export class AppError extends McpError {
+  constructor(message: string, code: string = 'INTERNAL_ERROR', statusCode: number = 500, details?: unknown) {
+    super(message, code, statusCode, details);
     this.name = this.constructor.name;
-    this.code = code;
-    this.statusCode = statusCode;
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
@@ -27,7 +23,7 @@ export class InvalidCoordinatesError extends AppError {
 
 export class HospitalNotFoundError extends AppError {
   constructor(hospitalId: string) {
-    super(`Hospital with ID "${hospitalId}" was not found.`, ERROR_CODES.INVALID_HOSPITAL_ID, 404);
+    super(`Hospital with ID "${hospitalId}" was not found.`, ERROR_CODES.HOSPITAL_NOT_FOUND, 404);
   }
 }
 
