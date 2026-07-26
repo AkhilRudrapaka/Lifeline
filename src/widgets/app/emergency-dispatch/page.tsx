@@ -16,7 +16,7 @@ import DeveloperPanel from './DeveloperPanel';
 import CallHospitalDialog from './CallHospitalDialog';
 import HospitalDetailsModal from './HospitalDetailsModal';
 import Toast, { ToastData } from './Toast';
-import { parseToolResult, buildNavigationUrl, shareOrCopy, safeOpenExternal, deriveDepartmentLabel, toFiniteNumber } from './utils';
+import { parseToolResult, shareOrCopy, openExternalRobust, navigateToHospital, deriveDepartmentLabel, toFiniteNumber, buildMapsPlaceUrl } from './utils';
 import {
   RankHospitalsOutputData,
   RankHospitalsToolInputData,
@@ -52,7 +52,7 @@ function MapPlaceholder({ label }: { label: string }) {
 export default function EmergencyDispatchWidget() {
   const theme = useTheme();
   const isDark = theme === 'dark';
-  const { isReady, getToolOutput, getToolInput, callTool, openExternal, maxHeight } = useWidgetSDK();
+  const { isReady, getToolOutput, getToolInput, callTool, maxHeight } = useWidgetSDK();
 
   const [state, setState] = useWidgetState<EmergencyDispatchState>(() => ({
     selectedHospitalId: null,
@@ -97,6 +97,43 @@ export default function EmergencyDispatchWidget() {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  // Every Call/Navigate button routes through this so a double-tap (common
+  // under panic on a touchscreen) can't fire two dialer/Maps launches or two
+  // "Unable to launch" toasts. Cooldown clears on its own — there's no
+  // delivery receipt from the host once a bridge accepts the call, so
+  // there's nothing to await.
+  const [pendingActions, setPendingActions] = useState<Set<string>>(new Set());
+  const pendingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  useEffect(() => {
+    return () => {
+      pendingTimersRef.current.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
+
+  function isActionPending(key: string): boolean {
+    return pendingActions.has(key);
+  }
+
+  function runOnce(key: string, fn: () => void, cooldownMs = 1500) {
+    if (pendingActions.has(key)) return;
+    setPendingActions((prev) => new Set(prev).add(key));
+    try {
+      fn();
+    } finally {
+      const timer = setTimeout(() => {
+        pendingTimersRef.current.delete(key);
+        setPendingActions((prev) => {
+          if (!prev.has(key)) return prev;
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+      }, cooldownMs);
+      pendingTimersRef.current.set(key, timer);
+    }
+  }
 
   const hospitals = output?.hospitals ?? [];
   const selectedHospitalId =
@@ -220,22 +257,34 @@ export default function EmergencyDispatchWidget() {
   }
 
   function handleCallEmergency() {
-    if (!safeOpenExternal(openExternal, 'tel:108')) {
-      showToast('error', 'Unable to launch the phone dialer on this device.');
-    }
+    runOnce('call-emergency', () => {
+      if (!openExternalRobust('tel:108')) {
+        showToast('error', 'Unable to launch the phone dialer on this device.');
+      }
+    });
   }
 
   function handleOpenNavigationFor(hospital: RankedHospitalData) {
-    const url = buildNavigationUrl(origin, hospital);
-    if (!safeOpenExternal(openExternal, url)) {
-      showToast('error', 'Unable to launch Maps.');
-    }
+    runOnce(`navigate-${hospital.hospital_id}`, () => {
+      const result = navigateToHospital(origin, hospital);
+      if (!result.ok) {
+        showToast('error', result.reason ?? 'Unable to launch Maps.');
+      }
+    });
   }
 
   function handleCallNowFor(phoneNumber: string) {
-    if (!safeOpenExternal(openExternal, `tel:${phoneNumber}`)) {
-      showToast('error', `Unable to launch the phone dialer. Hospital contact: ${phoneNumber}`);
-    }
+    runOnce(`call-${phoneNumber}`, () => {
+      if (!openExternalRobust(`tel:${phoneNumber}`)) {
+        showToast('error', `Unable to launch the phone dialer. Hospital contact: ${phoneNumber}`);
+      }
+    });
+  }
+
+  function handleOpenMapsLinkFor(url: string) {
+    runOnce(`maps-${url}`, () => {
+      if (!openExternalRobust(url)) showToast('error', 'Unable to launch Maps.');
+    });
   }
 
   async function handleShareLocation() {
@@ -339,6 +388,7 @@ export default function EmergencyDispatchWidget() {
         dispatchStartedAt={state?.dispatchStartedAt ?? null}
         isDark={isDark}
         onCallEmergency={handleCallEmergency}
+        isCallPending={isActionPending('call-emergency')}
       />
 
       <WorkflowTimeline
@@ -419,6 +469,7 @@ export default function EmergencyDispatchWidget() {
               onReserve={() => openReservationModal(selectedHospital.hospital_id)}
               onCallHospital={() => openCallDialog(selectedHospital.hospital_id)}
               onOpenNavigation={() => handleOpenNavigationFor(selectedHospital)}
+              isNavigationPending={isActionPending(`navigate-${selectedHospital.hospital_id}`)}
             />
           )}
         </div>
@@ -458,6 +509,8 @@ export default function EmergencyDispatchWidget() {
           if (target) handleOpenNavigationFor(target);
         }}
         onCallHospital={() => confirmedReservation && handleCallNowFor(confirmedReservation.hospital_phone_number)}
+        isNavigationPending={!!confirmedReservation && isActionPending(`navigate-${confirmedReservation.hospital_id}`)}
+        isCallPending={!!confirmedReservation && isActionPending(`call-${confirmedReservation.hospital_phone_number}`)}
       />
 
       <SystemStatusPanel
@@ -483,6 +536,8 @@ export default function EmergencyDispatchWidget() {
           onShareReservation={handleShareReservation}
           onOpenNavigation={() => handleOpenNavigationFor(reservingHospital)}
           onCallHospital={() => handleCallNowFor(reservingHospital.phone_number)}
+          isNavigationPending={isActionPending(`navigate-${reservingHospital.hospital_id}`)}
+          isCallPending={isActionPending(`call-${reservingHospital.phone_number}`)}
         />
       )}
 
@@ -497,6 +552,7 @@ export default function EmergencyDispatchWidget() {
             handleCallNowFor(callDialogHospital.phone_number);
             setCallDialogHospitalId(null);
           }}
+          isCallPending={isActionPending(`call-${callDialogHospital.phone_number}`)}
         />
       )}
 
@@ -515,9 +571,9 @@ export default function EmergencyDispatchWidget() {
           }}
           onCallHospital={() => openCallDialog(detailsHospital.hospital_id)}
           onOpenNavigation={() => handleOpenNavigationFor(detailsHospital)}
-          onOpenMapsLink={(url) => {
-            if (!safeOpenExternal(openExternal, url)) showToast('error', 'Unable to launch Maps.');
-          }}
+          onOpenMapsLink={handleOpenMapsLinkFor}
+          isNavigationPending={isActionPending(`navigate-${detailsHospital.hospital_id}`)}
+          isMapsPending={isActionPending(`maps-${buildMapsPlaceUrl(detailsHospital)}`)}
         />
       )}
     </div>

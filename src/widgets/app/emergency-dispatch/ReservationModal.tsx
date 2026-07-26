@@ -16,6 +16,8 @@ interface ReservationModalProps {
   onShareReservation: () => void;
   onOpenNavigation: () => void;
   onCallHospital: () => void;
+  isNavigationPending?: boolean;
+  isCallPending?: boolean;
 }
 
 export default function ReservationModal({
@@ -30,6 +32,8 @@ export default function ReservationModal({
   onShareReservation,
   onOpenNavigation,
   onCallHospital,
+  isNavigationPending = false,
+  isCallPending = false,
 }: ReservationModalProps) {
   const [patientName, setPatientName] = useState('');
   const [patientAge, setPatientAge] = useState('');
@@ -136,11 +140,11 @@ export default function ReservationModal({
               <button type="button" onClick={onShareReservation} style={miniButtonStyle(borderColor, textColor)}>
                 🔗 Share
               </button>
-              <button type="button" onClick={onOpenNavigation} style={miniButtonStyle(borderColor, textColor)}>
-                🧭 Navigate
+              <button type="button" onClick={onOpenNavigation} disabled={isNavigationPending} style={miniButtonStyle(borderColor, textColor, mutedColor, isNavigationPending)}>
+                {isNavigationPending ? '⏳' : '🧭'} Navigate
               </button>
-              <button type="button" onClick={onCallHospital} style={miniButtonStyle(borderColor, textColor)}>
-                📞 Call
+              <button type="button" onClick={onCallHospital} disabled={isCallPending} style={miniButtonStyle(borderColor, textColor, mutedColor, isCallPending)}>
+                {isCallPending ? '⏳' : '📞'} Call
               </button>
             </div>
 
@@ -309,7 +313,7 @@ export default function ReservationModal({
   );
 }
 
-function miniButtonStyle(borderColor: string, textColor: string) {
+function miniButtonStyle(borderColor: string, textColor: string, mutedColor?: string, isPending?: boolean) {
   return {
     flex: 1,
     fontSize: 11.5,
@@ -318,7 +322,8 @@ function miniButtonStyle(borderColor: string, textColor: string) {
     borderRadius: 8,
     border: `1px solid ${borderColor}`,
     background: 'transparent',
-    color: textColor,
-    cursor: 'pointer',
+    color: isPending && mutedColor ? mutedColor : textColor,
+    cursor: isPending ? 'default' : 'pointer',
+    opacity: isPending ? 0.6 : 1,
   } as const;
 }

@@ -15,6 +15,8 @@ interface HospitalDetailsModalProps {
   onCallHospital: () => void;
   onOpenNavigation: () => void;
   onOpenMapsLink: (url: string) => void;
+  isNavigationPending?: boolean;
+  isMapsPending?: boolean;
 }
 
 function Row({ label, value, isDark }: { label: string; value: string; isDark: boolean }) {
@@ -40,6 +42,8 @@ export default function HospitalDetailsModal({
   onCallHospital,
   onOpenNavigation,
   onOpenMapsLink,
+  isNavigationPending = false,
+  isMapsPending = false,
 }: HospitalDetailsModalProps) {
   const panelBg = isDark ? '#0f172a' : '#ffffff';
   const textColor = isDark ? '#f1f5f9' : '#0f172a';
@@ -152,11 +156,21 @@ export default function HospitalDetailsModal({
           <button type="button" onClick={onCallHospital} style={secondaryButton(isDark, borderColor, textColor)}>
             📞 Call
           </button>
-          <button type="button" onClick={onOpenNavigation} style={secondaryButton(isDark, borderColor, textColor)}>
-            🧭 Navigate
+          <button
+            type="button"
+            onClick={onOpenNavigation}
+            disabled={isNavigationPending}
+            style={secondaryButton(isDark, borderColor, textColor, mutedColor, isNavigationPending)}
+          >
+            {isNavigationPending ? '⏳ Opening…' : '🧭 Navigate'}
           </button>
-          <button type="button" onClick={() => onOpenMapsLink(buildMapsPlaceUrl(hospital))} style={secondaryButton(isDark, borderColor, textColor)}>
-            🗺 Maps
+          <button
+            type="button"
+            onClick={() => onOpenMapsLink(buildMapsPlaceUrl(hospital))}
+            disabled={isMapsPending}
+            style={secondaryButton(isDark, borderColor, textColor, mutedColor, isMapsPending)}
+          >
+            {isMapsPending ? '⏳ Opening…' : '🗺 Maps'}
           </button>
         </div>
         <button
@@ -182,7 +196,7 @@ export default function HospitalDetailsModal({
   );
 }
 
-function secondaryButton(isDark: boolean, borderColor: string, textColor: string) {
+function secondaryButton(isDark: boolean, borderColor: string, textColor: string, mutedColor?: string, isPending?: boolean) {
   return {
     flex: 1,
     fontSize: 12,
@@ -191,7 +205,8 @@ function secondaryButton(isDark: boolean, borderColor: string, textColor: string
     borderRadius: 9,
     border: `1px solid ${borderColor}`,
     background: 'transparent',
-    color: textColor,
-    cursor: 'pointer',
+    color: isPending && mutedColor ? mutedColor : textColor,
+    cursor: isPending ? 'default' : 'pointer',
+    opacity: isPending ? 0.6 : 1,
   } as const;
 }

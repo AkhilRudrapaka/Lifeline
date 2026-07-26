@@ -29,9 +29,18 @@ interface FeaturedHospitalCardProps {
   onReserve: () => void;
   onCallHospital: () => void;
   onOpenNavigation: () => void;
+  isNavigationPending?: boolean;
 }
 
-export default function FeaturedHospitalCard({ hospital, rank, isDark, onReserve, onCallHospital, onOpenNavigation }: FeaturedHospitalCardProps) {
+export default function FeaturedHospitalCard({
+  hospital,
+  rank,
+  isDark,
+  onReserve,
+  onCallHospital,
+  onOpenNavigation,
+  isNavigationPending = false,
+}: FeaturedHospitalCardProps) {
   const panelBg = isDark ? '#111827' : '#ffffff';
   const textColor = isDark ? '#f1f5f9' : '#0f172a';
   const mutedColor = isDark ? 'rgba(241,245,249,0.65)' : 'rgba(15,23,42,0.6)';
@@ -134,6 +143,7 @@ export default function FeaturedHospitalCard({ hospital, rank, isDark, onReserve
         <button
           type="button"
           onClick={onOpenNavigation}
+          disabled={isNavigationPending}
           style={{
             flex: 1,
             fontSize: 12,
@@ -142,11 +152,12 @@ export default function FeaturedHospitalCard({ hospital, rank, isDark, onReserve
             borderRadius: 9,
             border: `1px solid ${borderColor}`,
             background: 'transparent',
-            color: textColor,
-            cursor: 'pointer',
+            color: isNavigationPending ? mutedColor : textColor,
+            cursor: isNavigationPending ? 'default' : 'pointer',
+            opacity: isNavigationPending ? 0.6 : 1,
           }}
         >
-          🧭 Navigate
+          {isNavigationPending ? '⏳ Opening…' : '🧭 Navigate'}
         </button>
         <button
           type="button"

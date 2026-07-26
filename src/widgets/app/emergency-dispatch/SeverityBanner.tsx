@@ -52,9 +52,10 @@ interface SeverityBannerProps {
   dispatchStartedAt: number | null;
   isDark: boolean;
   onCallEmergency: () => void;
+  isCallPending?: boolean;
 }
 
-export default function SeverityBanner({ severity, emergencyType, dispatchStartedAt, isDark, onCallEmergency }: SeverityBannerProps) {
+export default function SeverityBanner({ severity, emergencyType, dispatchStartedAt, isDark, onCallEmergency, isCallPending = false }: SeverityBannerProps) {
   const goldenHour = useGoldenHour(dispatchStartedAt);
   const style = severity ? SEVERITY_STYLE[severity] : SEVERITY_STYLE.Moderate;
   const textColor = isDark ? '#f1f5f9' : '#0f172a';
@@ -123,6 +124,7 @@ export default function SeverityBanner({ severity, emergencyType, dispatchStarte
         <button
           type="button"
           onClick={onCallEmergency}
+          disabled={isCallPending}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -130,15 +132,16 @@ export default function SeverityBanner({ severity, emergencyType, dispatchStarte
             fontSize: 13,
             fontWeight: 800,
             color: '#ffffff',
-            background: '#dc2626',
+            background: isCallPending ? '#b91c1c' : '#dc2626',
             border: 'none',
             borderRadius: 10,
             padding: '10px 16px',
-            cursor: 'pointer',
+            cursor: isCallPending ? 'default' : 'pointer',
+            opacity: isCallPending ? 0.75 : 1,
             whiteSpace: 'nowrap',
           }}
         >
-          📞 Call 108
+          {isCallPending ? '⏳ Calling…' : '📞 Call 108'}
         </button>
       </div>
     </div>

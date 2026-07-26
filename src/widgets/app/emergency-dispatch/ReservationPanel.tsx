@@ -9,6 +9,8 @@ interface ReservationPanelProps {
   onShareReservation: () => void;
   onOpenNavigation: () => void;
   onCallHospital: () => void;
+  isNavigationPending?: boolean;
+  isCallPending?: boolean;
 }
 
 function Row({ label, value, isDark }: { label: string; value: string; isDark: boolean }) {
@@ -22,7 +24,15 @@ function Row({ label, value, isDark }: { label: string; value: string; isDark: b
   );
 }
 
-export default function ReservationPanel({ reservation, isDark, onShareReservation, onOpenNavigation, onCallHospital }: ReservationPanelProps) {
+export default function ReservationPanel({
+  reservation,
+  isDark,
+  onShareReservation,
+  onOpenNavigation,
+  onCallHospital,
+  isNavigationPending = false,
+  isCallPending = false,
+}: ReservationPanelProps) {
   const panelBg = isDark ? '#111827' : '#ffffff';
   const borderColor = isDark ? '#1e293b' : '#e2e8f0';
   const mutedColor = isDark ? 'rgba(241,245,249,0.65)' : 'rgba(15,23,42,0.6)';
@@ -89,13 +99,13 @@ export default function ReservationPanel({ reservation, isDark, onShareReservati
       <div style={{ marginTop: 10, fontSize: 12, color: mutedColor, lineHeight: 1.5 }}>📋 {reservation.arrival_instructions}</div>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button type="button" onClick={onOpenNavigation} style={buttonStyle(borderColor, textColor)}>
-          🧭 Open Navigation
+        <button type="button" onClick={onOpenNavigation} disabled={isNavigationPending} style={buttonStyle(borderColor, textColor, mutedColor, isNavigationPending)}>
+          {isNavigationPending ? '⏳ Opening…' : '🧭 Open Navigation'}
         </button>
-        <button type="button" onClick={onCallHospital} style={buttonStyle(borderColor, textColor)}>
-          📞 Call Hospital
+        <button type="button" onClick={onCallHospital} disabled={isCallPending} style={buttonStyle(borderColor, textColor, mutedColor, isCallPending)}>
+          {isCallPending ? '⏳ Calling…' : '📞 Call Hospital'}
         </button>
-        <button type="button" onClick={onShareReservation} style={buttonStyle(borderColor, textColor)}>
+        <button type="button" onClick={onShareReservation} style={buttonStyle(borderColor, textColor, mutedColor, false)}>
           🔗 Share
         </button>
       </div>
@@ -103,7 +113,7 @@ export default function ReservationPanel({ reservation, isDark, onShareReservati
   );
 }
 
-function buttonStyle(borderColor: string, textColor: string): CSSProperties {
+function buttonStyle(borderColor: string, textColor: string, mutedColor: string, isPending: boolean): CSSProperties {
   return {
     flex: 1,
     fontSize: 12,
@@ -112,7 +122,8 @@ function buttonStyle(borderColor: string, textColor: string): CSSProperties {
     borderRadius: 8,
     border: `1px solid ${borderColor}`,
     background: 'transparent',
-    color: textColor,
-    cursor: 'pointer',
+    color: isPending ? mutedColor : textColor,
+    cursor: isPending ? 'default' : 'pointer',
+    opacity: isPending ? 0.6 : 1,
   };
 }

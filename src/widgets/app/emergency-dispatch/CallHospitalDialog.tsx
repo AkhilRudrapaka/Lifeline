@@ -10,9 +10,18 @@ interface CallHospitalDialogProps {
   isDark: boolean;
   onClose: () => void;
   onCallNow: () => void;
+  isCallPending?: boolean;
 }
 
-export default function CallHospitalDialog({ hospitalName, department, phoneNumber, isDark, onClose, onCallNow }: CallHospitalDialogProps) {
+export default function CallHospitalDialog({
+  hospitalName,
+  department,
+  phoneNumber,
+  isDark,
+  onClose,
+  onCallNow,
+  isCallPending = false,
+}: CallHospitalDialogProps) {
   const [copied, setCopied] = useState(false);
 
   const panelBg = isDark ? '#0f172a' : '#ffffff';
@@ -69,9 +78,20 @@ export default function CallHospitalDialog({ hospitalName, department, phoneNumb
           <button
             type="button"
             onClick={onCallNow}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', background: '#dc2626', color: '#fff', fontWeight: 800, cursor: 'pointer' }}
+            disabled={isCallPending}
+            style={{
+              flex: 1,
+              padding: '10px 0',
+              borderRadius: 10,
+              border: 'none',
+              background: isCallPending ? '#b91c1c' : '#dc2626',
+              color: '#fff',
+              fontWeight: 800,
+              cursor: isCallPending ? 'default' : 'pointer',
+              opacity: isCallPending ? 0.75 : 1,
+            }}
           >
-            📞 Call Now
+            {isCallPending ? '⏳ Calling…' : '📞 Call Now'}
           </button>
         </div>
         <button

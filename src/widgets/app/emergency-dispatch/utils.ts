@@ -81,18 +81,106 @@ export function buildNavigationUrl(
 }
 
 /**
- * openExternal() is a synchronous, void-returning bridge call — it can't
- * report whether the host actually launched something, but it can throw if
- * the bridge itself is unavailable. This normalizes that into a boolean so
- * callers can show "Unable to launch Maps." instead of failing silently.
+ * Bypasses `@nitrostack/widgets`' `WidgetSDK.openExternal()`, which is
+ * hardcoded to call `window.openai.openExternal(...)` unconditionally —
+ * verified by reading the installed package's compiled source
+ * (node_modules/@nitrostack/widgets/dist/sdk.js). A host that implements
+ * only the standard MCP Apps bridge (`window.__MCP_APP_CONTEXT__`, no
+ * `window.openai` at all — e.g. most non-ChatGPT MCP clients) makes that
+ * call throw `Cannot read properties of undefined (reading 'openExternal')`,
+ * even though `WidgetSDK.isReady()` itself correctly recognizes that host.
+ * This is why the button works in whatever environment injects
+ * `window.openai` (e.g. local testing) and silently fails wherever the
+ * production host only implements the MCP Apps globals.
+ *
+ * This tries every real delivery mechanism in order, so it works
+ * regardless of which bridge (or neither) the host provides:
+ *   1. MCP Apps bridge (window.__MCP_APP_CONTEXT__.openExternal)
+ *   2. OpenAI Apps bridge (window.openai.openExternal) — done directly so
+ *      we aren't dependent on the SDK's specific bug or version
+ *   3. A real `window.open` (covers running outside any MCP host at all)
+ *   4. `window.location.assign` as the absolute last resort
+ * Returns true only when a mechanism actually ran without throwing and,
+ * for window.open, wasn't blocked (a blocked popup returns null — the
+ * standard, reliable way to detect that case). There's no way to confirm
+ * the *host* actually navigated once its bridge accepts the call — MCP
+ * provides no delivery receipt — so "true" here means "successfully
+ * handed off," not "guaranteed on screen."
  */
-export function safeOpenExternal(openExternal: (url: string) => void, url: string): boolean {
+export function openExternalRobust(url: string): boolean {
+  if (!hasWindow()) return false;
+
+  // `window.openai`/`window.__MCP_APP_CONTEXT__` are declared ambiently by
+  // `@nitrostack/widgets`' types.d.ts (as always-present, which is only true
+  // for whichever bridge the current host actually implements) — the `in`
+  // checks are the real runtime guard; TypeScript's static type is not.
+  const mcpContext = '__MCP_APP_CONTEXT__' in window ? window.__MCP_APP_CONTEXT__ : undefined;
+  if (mcpContext && typeof mcpContext.openExternal === 'function') {
+    try {
+      mcpContext.openExternal({ href: url });
+      return true;
+    } catch {
+      // Fall through to the next mechanism.
+    }
+  }
+
+  const openai = 'openai' in window ? window.openai : undefined;
+  if (openai && typeof openai.openExternal === 'function') {
+    try {
+      openai.openExternal({ href: url });
+      return true;
+    } catch {
+      // Fall through.
+    }
+  }
+
   try {
-    openExternal(url);
+    const popup = window.open(url, '_blank', 'noopener,noreferrer');
+    if (popup) return true;
+  } catch {
+    // Fall through — e.g. malformed URL.
+  }
+
+  try {
+    window.location.assign(url);
     return true;
   } catch {
     return false;
   }
+}
+
+export interface NavigationResult {
+  ok: boolean;
+  reason?: string;
+}
+
+/**
+ * Full navigation cascade for "Navigate"/"Show on Maps" actions: validates
+ * coordinates first (never hands a NaN/undefined/string-typed value to a
+ * map URL), then tries progressively simpler map URLs — the rich
+ * directions link, a plain query link, then the OS-level `geo:` intent
+ * scheme — via openExternalRobust()'s full mechanism fallback at each tier.
+ */
+export function navigateToHospital(
+  origin: { latitude: number; longitude: number } | null,
+  destination: { latitude: number | null | undefined; longitude: number | null | undefined; hospital_name?: string }
+): NavigationResult {
+  const lat = toFiniteNumber(destination.latitude);
+  const lng = toFiniteNumber(destination.longitude);
+  if (lat === null || lng === null) {
+    return { ok: false, reason: 'This hospital has no valid location on file, so navigation cannot be started.' };
+  }
+
+  const richUrl = buildNavigationUrl(origin, { latitude: lat, longitude: lng, hospital_name: destination.hospital_name });
+  if (openExternalRobust(richUrl)) return { ok: true };
+
+  const queryUrl = `https://maps.google.com/?q=${lat},${lng}`;
+  if (openExternalRobust(queryUrl)) return { ok: true };
+
+  const geoUrl = `geo:${lat},${lng}`;
+  if (openExternalRobust(geoUrl)) return { ok: true };
+
+  return { ok: false, reason: 'Unable to launch Maps from this app. Try opening your maps app directly.' };
 }
 
 /** Direct clipboard write (no share-sheet attempt) for explicit "Copy" buttons. */
